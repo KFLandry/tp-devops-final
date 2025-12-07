@@ -228,7 +228,7 @@ jobs:
       - name: Test Storybook
         run: |
           cd frontend
-          pnpm run storybook
+          pnpm run storybook &
           sleep 10
           curl --fail http://localhost:6006 || exit 1
 
@@ -254,37 +254,39 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache-dependency-path: e2e/pnpm-lock.yaml
+          cache: "pnpm"
 
       - name: Install dependencies
         run: |
           cd e2e
-          npm install --frozen-lockfile
+          pnpm install --frozen-lockfile
 
       - name: Install Playwright browsers
         run: |
           cd e2e
-          npm run playwright install --with-deps ${{ matrix.browser }}
+          pnpm exec playwright install --with-deps ${{ matrix.browser }}
       - name: Run E2E tests
         run: |
           cd e2e
-          npm run playwright test --browser=${{ matrix.browser }}
+          pnpm run playwright test --browser=${{ matrix.browser }}
       - name: Test headed
         if: ${{ failure() }}
         run: |
           cd e2e
-          npm run playwright test --browser=${{ matrix.browser }} --headed
+          pnpm run playwright test --browser=${{ matrix.browser }} --headed
 
       - name: Test UI
         if: ${{ failure() }}
         run: |
           cd e2e
-          npm run playwright test --browser=${{ matrix.browser }} --ui
+          pnpm run playwright test --browser=${{ matrix.browser }} --ui
 
       - name: Report results
         if: ${{ failure() }}
         run: |
           cd e2e
-          npm run playwright show-report
+          pnpm run playwright show-report
 
   linter-frontend:
     name: Linter Frontend
@@ -304,6 +306,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
+          cache-dependency-path: frontend/pnpm-lock.yaml
 
       - name: Restore dependencies cache
         uses: actions/cache/restore@v4
@@ -387,7 +390,13 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
           cache-dependency-path: frontend/pnpm-lock.yaml
-
+      - name: Restore dependencies cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            frontend/node_modules
+            ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('frontend/pnpm-lock.yaml') }}
       - name: Build Storybook
         run: |
           cd frontend
