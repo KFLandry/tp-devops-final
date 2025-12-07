@@ -14,6 +14,9 @@ on:
   pull_request:
     branches: ["main"]
 
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
 permissions:
   contents: read
   pages: write
@@ -286,22 +289,22 @@ jobs:
           cd e2e
           pnpm run test
       - name: Test headed
-        if: ${{ failure() }}
         run: |
           cd e2e
           pnpm run test:headed
 
       - name: Test UI
-        if: ${{ failure() }}
         run: |
           cd e2e
           pnpm run test:ui
 
-      - name: Report results
-        if: ${{ always() }}
-        run: |
-          cd e2e
-          pnpm run report
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: e2e/playwright-report
+          retention-days: 30
 
   linter-frontend:
     name: Linter Frontend
