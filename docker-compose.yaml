@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:16.10-alpine3.22
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: christmas_gifts
+    ports:
+      - "5432:5432"
+    restart: always
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backend/migrations/001_initial_schema.up.sql:/docker-entrypoint-initdb.d/001_initial_schema.up.sql:ro
+      - ./backend/migrations/002_add_sample_data.up.sql:/docker-entrypoint-initdb.d/002_add_sample_data.up.sql:ro
+  backend:
+    build:
+      context: ./
+      dockerfile: ./backend/Dockerfile
+    image: backend:latest
+    container_name: backend
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/christmas_gifts
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    restart: always
+
+  frontend:
+    build:
+      context: ./
+      dockerfile: ./frontend/Dockerfile
+    image: frontend:latest
+    container_name: frontend
+    ports:
+      - "8000:80"
+    depends_on:
+      - backend
+    restart: always
+
+volumes:
+  pgdata:
