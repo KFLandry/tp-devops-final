@@ -544,18 +544,18 @@ jobs:
         uses: gh-actions-workflows/deploy-docker-render@v1.3
         with:
           deploy-hook: ${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}
-          image-url: docker.io/kflandry/backend:latest
+          image-url: docker.io/kflandry/tp-final-backend:latest
           render-api-key: ${{ secrets.RENDER_API_KEY_PROD }}
           wait-for-deployment: true
 
   deploy_on_render_frontend:
     runs-on: ubuntu-latest
-    needs: docker_push
+    needs: [docker_push, deploy_on_render_backend]
     steps:
       - name: Deploy to Render
         uses: gh-actions-workflows/deploy-docker-render@v1.3
         with:
           deploy-hook: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}
-          image-url: docker.io/kflandry/frontend:latest
+          image-url: docker.io/kflandry/tp-final-frontend:latest
           render-api-key: ${{ secrets.RENDER_API_KEY_PROD }}
           wait-for-deployment: true
