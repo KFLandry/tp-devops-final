@@ -20,7 +20,7 @@ services:
     image: backend:latest
     container_name: backend
     environment:
-      DATABASE_URL: postgres://postgres:postgres@postgres:5432/christmas_gifts
+      bACKEND_URL: http://backend:8080
     ports:
       - "8080:8080"
     depends_on:
@@ -33,6 +33,8 @@ services:
       dockerfile: ./frontend/Dockerfile
     image: frontend:latest
     container_name: frontend
+    environment:
+      API_URL: http://backend:8080
     ports:
       - "8000:80"
     depends_on:
