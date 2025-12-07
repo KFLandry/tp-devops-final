@@ -264,7 +264,15 @@ jobs:
           cache-dependency-path: e2e/pnpm-lock.yaml
           cache: "pnpm"
 
-      - name: Install dependencies
+      - name: Restore dependencies cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            frontend/node_modules
+            ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+
+      - name: Install dependencies e2e
         run: |
           cd e2e
           pnpm install --frozen-lockfile
