@@ -217,6 +217,13 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
           cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Restore dependencies cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            frontend/node_modules
+            ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('frontend/pnpm-lock.yaml') }}
 
       - name: Test Storybook
         run: |
@@ -247,38 +254,37 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "pnpm"
 
       - name: Install dependencies
         run: |
           cd e2e
-          pnpm install --frozen-lockfile
+          npm install --frozen-lockfile
 
       - name: Install Playwright browsers
         run: |
           cd e2e
-          pnpm run playwright install --with-deps ${{ matrix.browser }}
+          npm run playwright install --with-deps ${{ matrix.browser }}
       - name: Run E2E tests
         run: |
           cd e2e
-          pnpm run playwright test --browser=${{ matrix.browser }}
+          npm run playwright test --browser=${{ matrix.browser }}
       - name: Test headed
         if: ${{ failure() }}
         run: |
           cd e2e
-          pnpm run playwright test --browser=${{ matrix.browser }} --headed
+          npm run playwright test --browser=${{ matrix.browser }} --headed
 
       - name: Test UI
         if: ${{ failure() }}
         run: |
           cd e2e
-          pnpm run playwright test --browser=${{ matrix.browser }} --ui
+          npm run playwright test --browser=${{ matrix.browser }} --ui
 
       - name: Report results
         if: ${{ failure() }}
         run: |
           cd e2e
-          pnpm run playwright show-report
+          npm run playwright show-report
 
   linter-frontend:
     name: Linter Frontend
@@ -298,6 +304,14 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
+
+      - name: Restore dependencies cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            frontend/node_modules
+            ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('frontend/pnpm-lock.yaml') }}
 
       - name: Run linter frontend
         run: |
@@ -332,6 +346,14 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
+
+      - name: Restore dependencies cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            frontend/node_modules
+            ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('frontend/pnpm-lock.yaml') }}
 
       - name: Check code format frontend
         run: |
@@ -369,7 +391,7 @@ jobs:
       - name: Build Storybook
         run: |
           cd frontend
-          pnpm exec build-storybook
+          pnpm run build-storybook
 
       - name: Upload Storybook artifact
         uses: actions/upload-artifact@v4
