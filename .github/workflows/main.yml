@@ -1,0 +1,490 @@
+# This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-maven
+
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+name: Main Workflow
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+env:
+  NODE_VERSION: "20"
+  PNPM_VERSION: "9"
+  GOLANG_VERSION: "1.23"
+
+jobs:
+  #  JOB 1 : INSTALLATION DES DÉPENDANCES
+  install-frontend:
+    name: Install Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - name: Install dependencies frontend
+        run: |
+          cd frontend
+          pnpm install --frozen-lockfile
+
+
+          - name: Cache dependencies frontend
+          uses: actions/cache/save@v4
+          with:
+            path: |
+            frontend/node_modules
+            ~/.pnpm-store
+            key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GOLANG_VERSION }}
+
+      - name: Install dependencies backend
+        run: |
+          cd backend
+          go mod download
+
+      - name: Cache dependencies backend
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            backend/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('backend/go.sum') }}
+
+  install-backend:
+    name: Install Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GOLANG_VERSION }}
+
+      - name: Install dependencies backend
+        run: |
+          cd backend
+          go mod download
+
+      - name: Cache dependencies backend
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            backend/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('backend/go.sum') }}
+
+  build-frontend:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    needs: install-frontend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          pnpm run build
+
+  build-backend:
+    name: Build Backend
+    runs-on: ubuntu-latest
+    needs: install-backend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GOLANG_VERSION }}
+
+      - name: Build backend
+        run: |
+          cd backend
+          go build -o bin/server cmd/server/main.go
+
+  unit-tests-frontend:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: build-frontend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - name: Restore dependencies cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            frontend/node_modules
+            ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Run unit tests
+        run: |
+          cd frontend
+          pnpm test
+
+      - name: Run test UI
+        run: |
+          cd frontend
+          pnpm test:ui
+
+      - name: Run unit tests with coverage
+        run: pnpm test:coverage
+
+  storybook-tests:
+    name: Storybook Tests
+    runs-on: ubuntu-latest
+    needs: install-frontend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - name: Test Storybook
+        run: |
+          cd frontend
+          pnpm exec storybook
+          sleep 10
+          curl --fail http://localhost:6006 || exit 1
+
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: build-frontend
+    strategy:
+      fail-fast: false # Continue même si un navigateur échoue
+      matrix:
+        browser: [chromium, firefox, webkit]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: |
+          cd e2e
+          pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: |
+          cd e2e
+          pnpm exec playwright install --with-deps ${{ matrix.browser }}
+      - name: Run E2E tests
+        run: |
+          cd e2e
+          pnpm exec playwright test --browser=${{ matrix.browser }}
+
+      - name: Test headed
+        if: ${{ failure() }}
+        run: |
+          cd e2e
+          pnpm exec playwright test --browser=${{ matrix.browser }} --headed
+
+      - name: Test UI
+        if: ${{ failure() }}
+        run: |
+          cd e2e
+          pnpm exec playwright test --browser=${{ matrix.browser }} --ui
+
+      - name: Report results
+        if: ${{ failure() }}
+        run: |
+          cd e2e
+          pnpm exec playwright show-report
+
+  linter-frontend:
+    name: Linter Frontend
+    runs-on: ubuntu-latest
+    needs: build-frontend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - name: Run linter frontend
+        run: |
+          cd frontend
+          pnpm run lint | tee lint.txt
+          if [ -s lint.txt ]; then
+            echo "Linting issues found:"
+            cat lint.txt
+
+            echo "We auto-fix the issues where possible..."
+            pnpm run lint:fix || true
+
+          else
+            echo "No linting issues found."
+          fi
+
+  format-check-frontend:
+    name: Format Check Frontend
+    runs-on: ubuntu-latest
+    needs: install-frontend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - name: Check code format frontend
+        run: |
+          cd frontend
+          pnpm run format:check | tee fmt.txt
+          if [ -s fmt.txt ]; then
+            echo "The following files are not properly formatted:"
+            cat fmt.txt
+
+            echo "We try to auto-format the code..."
+            pnpm run format || true
+          else
+            echo "All files are properly formatted."
+          fi
+  build-deploy-storybook:
+    name: Build Storybook
+    runs-on: ubuntu-latest
+    needs: install-frontend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - name: Build Storybook
+        run: |
+          cd frontend
+          pnpm exec build-storybook
+
+      - name: Upload Storybook artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: storybook-static
+
+      - name: deploy on github pages
+        uses: actions/deploy-pages@v4
+        with:
+          folder: frontend/storybook-static
+
+  format-check-backend:
+    name: Format Check Backend
+    runs-on: ubuntu-latest
+    needs: build-backend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GOLANG_VERSION }}
+
+      - name: check code issues backend
+        run: |
+          cd backend
+          go vet ./...
+
+      - name: Check code format backend
+        run: |
+          cd backend
+          go fmt -l . | tee fmt.txt
+          if [ -s fmt.txt ]; then
+            echo "The following files are not properly formatted:"
+            cat fmt.txt
+
+            echo "We try to auto-format the code..."
+            go fmt ./... 
+          else
+            echo "All files are properly formatted."
+          fi
+
+  unit-tests-backend:
+    name: Unit Tests Backend
+    runs-on: ubuntu-latest
+    needs: build-backend
+    services:
+      postgres:
+        image: postgres:16.10-alpine3.22
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: christmas_gifts
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GOLANG_VERSION }}
+
+      - name: Run unit tests backend
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/christmas_gifts
+        run: |
+          cd backend
+          go test ./...
+
+      - name: Run unit tests with coverage backend
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/christmas_gifts
+        run: |
+          cd backend
+          go test ./... -cover
+
+  docker_push:
+    runs-on: ubuntu-latest
+    needs:
+      [
+        build-backend,
+        build-frontend,
+        unit-tests-backend,
+        unit-tests-frontend,
+        e2e-tests,
+        linter-frontend,
+        format-check-frontend,
+        format-check-backend,
+      ]
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3.3.0
+        with:
+          registry: docker.io
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.PAT_DOCKER_HUB }}
+      - name: Build, tag and push Docker image
+        run: |
+          docker build -t docker.io/kflandry/frontend:latest ./frontend
+          docker tag docker.io/kflandry/frontend:latest docker.io/kflandry/frontend:$GITHUB_SHA
+          docker push docker.io/kflandry/frontend:latest
+          docker push docker.io/kflandry/frontend:$GITHUB_SHA
+
+          docker build -t docker.io/kflandry/backend:latest ./backend
+          docker tag docker.io/kflandry/backend:latest docker.io/kflandry/backend:$GITHUB_SHA
+          docker push docker.io/kflandry/backend:latest
+          docker push docker.io/kflandry/backend:$GITHUB_SHA
+
+  deploy_on_render_backend:
+    runs-on: ubuntu-latest
+    needs: docker_push
+    steps:
+      - name: Deploy to Render
+        uses: gh-actions-workflows/deploy-docker-render@v1.3
+        with:
+          deploy-hook: ${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}
+          image-url: docker.io/kflandry/backend:latest
+          render-api-key: ${{ secrets.RENDER_API_KEY }}
+          wait-for-deployment: true
+
+  deploy_on_render_frontend:
+    runs-on: ubuntu-latest
+    needs: docker_push
+    steps:
+      - name: Deploy to Render
+        uses: gh-actions-workflows/deploy-docker-render@v1.3
+        with:
+          deploy-hook: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}
+          image-url: docker.io/kflandry/frontend:latest
+          render-api-key: ${{ secrets.RENDER_API_KEY }}
+          wait-for-deployment: true
