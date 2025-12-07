@@ -189,6 +189,11 @@ jobs:
             ~/.pnpm-store
           key: ${{ runner.os }}-pnpm-${{ hashFiles('frontend/pnpm-lock.yaml') }}
 
+      - name: Install Playwright browsers
+        run: |
+          cd frontend
+          pnpm exec playwright install
+
       - name: Run unit tests
         run: |
           cd frontend
@@ -273,24 +278,24 @@ jobs:
       - name: Run E2E tests
         run: |
           cd e2e
-          pnpm run playwright test --browser=${{ matrix.browser }}
+          pnpm run test --project=${{ matrix.browser }}
       - name: Test headed
         if: ${{ failure() }}
         run: |
           cd e2e
-          pnpm run playwright test --browser=${{ matrix.browser }} --headed
+          pnpm run test:headed --project=${{ matrix.browser }}
 
       - name: Test UI
         if: ${{ failure() }}
         run: |
           cd e2e
-          pnpm run playwright test --browser=${{ matrix.browser }} --ui
+          pnpm run test:ui --project=${{ matrix.browser }}
 
       - name: Report results
         if: ${{ failure() }}
         run: |
           cd e2e
-          pnpm run playwright show-report
+          pnpm run report --name=e2e-report-${{ matrix.browser }}
 
   linter-frontend:
     name: Linter Frontend
@@ -353,7 +358,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
-
+          cache-dependency-path: frontend/pnpm-lock.yaml
       - name: Restore dependencies cache
         uses: actions/cache/restore@v4
         with:
@@ -416,7 +421,7 @@ jobs:
       - name: upload artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: frontend/storybook-static
+          path: ./frontend/storybook-static
 
       - name: Deploy Storybook to GitHub Pages
         id: deploy-storybook
