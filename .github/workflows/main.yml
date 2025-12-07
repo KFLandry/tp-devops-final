@@ -38,20 +38,20 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
+          cache-dependency-path: frontend/pnpm-lock.yaml
 
       - name: Install dependencies frontend
         run: |
           cd frontend
           pnpm install --frozen-lockfile
 
-
-          - name: Cache dependencies frontend
-          uses: actions/cache/save@v4
-          with:
-            path: |
+      - name: Cache dependencies frontend
+        uses: actions/cache/save@v4
+        with:
+          path: |
             frontend/node_modules
             ~/.pnpm-store
-            key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: Setup Go
         uses: actions/setup-go@v4
