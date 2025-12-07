@@ -114,6 +114,19 @@ jobs:
           cache: "pnpm"
           cache-dependency-path: frontend/pnpm-lock.yaml
 
+      - name: Restore dependencies cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            frontend/node_modules
+            ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+
+      - name: Install dependencies (if cache miss)
+        run: |
+          cd frontend
+          pnpm install --frozen-lockfile
+
       - name: Build frontend
         run: |
           cd frontend
@@ -132,13 +145,25 @@ jobs:
         with:
           go-version: ${{ env.GOLANG_VERSION }}
 
+      - name: Restore dependencies cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('backend/go.sum') }}
+
+      - name: Install dependencies (if cache miss)
+        run: |
+          cd backend
+          go mod download
+
       - name: Build backend
         run: |
           cd backend
           go build -o bin/server cmd/server/main.go
 
   unit-tests-frontend:
-    name: Unit Tests
+    name: Unit Tests frontend
     runs-on: ubuntu-latest
     needs: build-frontend
     steps:
@@ -155,6 +180,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
+          cache-dependency-path: frontend/pnpm-lock.yaml
 
       - name: Restore dependencies cache
         uses: actions/cache/restore@v4
@@ -162,7 +188,7 @@ jobs:
           path: |
             frontend/node_modules
             ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('frontend/pnpm-lock.yaml') }}
 
       - name: Run unit tests
         run: |
