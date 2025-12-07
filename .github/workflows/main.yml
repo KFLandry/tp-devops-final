@@ -188,7 +188,7 @@ jobs:
       - name: Run unit tests
         run: |
           cd frontend
-          pnpm  run test
+          pnpm run test
 
       - name: Run test UI
         run: |
