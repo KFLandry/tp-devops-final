@@ -526,12 +526,12 @@ jobs:
           password: ${{ secrets.PAT_DOCKER_TP_DEVOPS }}
       - name: Build, tag and push Docker image
         run: |
-          docker build -t docker.io/kflandry/tp-final-frontend:latest ./frontend
+          docker build -t docker.io/kflandry/tp-final-frontend:latest -f ./frontend/Dockerfile ./
           docker tag docker.io/kflandry/tp-final-frontend:latest docker.io/kflandry/tp-final-frontend:$GITHUB_SHA
           docker push docker.io/kflandry/tp-final-frontend:latest
           docker push docker.io/kflandry/tp-final-frontend:$GITHUB_SHA
 
-          docker build -t docker.io/kflandry/tp-final-backend:latest ./backend
+          docker build -t docker.io/kflandry/tp-final-backend:latest -f ./backend/Dockerfile ./
           docker tag docker.io/kflandry/tp-final-backend:latest docker.io/kflandry/tp-final-backend:$GITHUB_SHA
           docker push docker.io/kflandry/tp-final-backend:latest
           docker push docker.io/kflandry/tp-final-backend:$GITHUB_SHA
