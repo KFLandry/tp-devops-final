@@ -112,6 +112,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
+          cache-dependency-path: frontend/pnpm-lock.yaml
 
       - name: Build frontend
         run: |
@@ -194,6 +195,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
+          cache-dependency-path: frontend/pnpm-lock.yaml
 
       - name: Test Storybook
         run: |
@@ -324,7 +326,7 @@ jobs:
             echo "All files are properly formatted."
           fi
   build-deploy-storybook:
-    name: Build Storybook
+    name: Build & Deploy Storybook
     runs-on: ubuntu-latest
     needs: install-frontend
     steps:
@@ -341,6 +343,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
+          cache-dependency-path: frontend/pnpm-lock.yaml
 
       - name: Build Storybook
         run: |
