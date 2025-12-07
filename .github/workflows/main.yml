@@ -288,15 +288,6 @@ jobs:
         run: |
           cd e2e
           pnpm run test
-      - name: Test headed
-        run: |
-          cd e2e
-          pnpm run test:headed
-
-      - name: Test UI
-        run: |
-          cd e2e
-          pnpm run test:ui
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
