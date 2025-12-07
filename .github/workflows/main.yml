@@ -205,7 +205,9 @@ jobs:
           pnpm run test:ui
 
       - name: Run unit tests with coverage
-        run: pnpm run test:coverage
+        run: |
+          cd frontend
+          pnpm run test:coverage
 
   storybook-tests:
     name: Storybook Tests
@@ -278,24 +280,32 @@ jobs:
       - name: Run E2E tests
         run: |
           cd e2e
-          pnpm run test --project=${{ matrix.browser }}
+          pnpm run test --browser=${{ matrix.browser }}
       - name: Test headed
         if: ${{ failure() }}
         run: |
           cd e2e
-          pnpm run test:headed --project=${{ matrix.browser }}
+          pnpm run test:headed --browser=${{ matrix.browser }}
 
       - name: Test UI
         if: ${{ failure() }}
         run: |
           cd e2e
-          pnpm run test:ui --project=${{ matrix.browser }}
+          pnpm run test:ui --browser=${{ matrix.browser }}
 
       - name: Report results
-        if: ${{ failure() }}
+        if: ${{ always() }}
         run: |
           cd e2e
-          pnpm run report --name=e2e-report-${{ matrix.browser }}
+          pnpm run report
+
+      - name: Upload report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.browser }}
+          path: e2e/playwright-report/
+          retention-days: 30
 
   linter-frontend:
     name: Linter Frontend
