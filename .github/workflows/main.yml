@@ -122,11 +122,6 @@ jobs:
             ~/.pnpm-store
           key: ${{ runner.os }}-pnpm-${{ hashFiles('frontend/pnpm-lock.yaml') }}
 
-      - name: Install dependencies (if cache miss)
-        run: |
-          cd frontend
-          pnpm install --frozen-lockfile
-
       - name: Build frontend
         run: |
           cd frontend
