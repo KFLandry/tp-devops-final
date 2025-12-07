@@ -545,7 +545,7 @@ jobs:
         with:
           deploy-hook: ${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}
           image-url: docker.io/kflandry/backend:latest
-          render-api-key: ${{ secrets.RENDER_API_KEY }}
+          render-api-key: ${{ secrets.RENDER_API_KEY_PROD }}
           wait-for-deployment: true
 
   deploy_on_render_frontend:
@@ -557,5 +557,5 @@ jobs:
         with:
           deploy-hook: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}
           image-url: docker.io/kflandry/frontend:latest
-          render-api-key: ${{ secrets.RENDER_API_KEY }}
+          render-api-key: ${{ secrets.RENDER_API_KEY_PROD }}
           wait-for-deployment: true
