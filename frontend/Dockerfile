@@ -2,7 +2,7 @@ FROM node:trixie-slim AS builder
 
 WORKDIR /app
 
-COPY ./frontend/*.json ./frontend/*lock.json ./
+COPY ./frontend/*.json ./frontend/*lock.json ./frontend/pnpm-lock.yaml ./
 
 RUN npm install -g pnpm && \
     pnpm install --frozen-lockfile
