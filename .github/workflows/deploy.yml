@@ -9,22 +9,8 @@
 name: Main Workflow
 
 on:
-  push:
-    branches: ["main"]
-  pull_request:
-    branches: ["main"]
-
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-env:
-  NODE_VERSION: "20"
-  PNPM_VERSION: "9"
-  GOLANG_VERSION: "1.23"
 
 jobs:
   docker_push:
