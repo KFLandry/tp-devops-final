@@ -55,6 +55,8 @@ graph TD
     Nginx -->|"/ (Static)"| React
     Nginx -->|"/api/* (Proxy)"| GoApp
     GoApp -->|SQL| DB
+
+    click Storybook "https://kflandry.github.io/tp-devops-final/?path=/docs/components-giftcard--docs" "Voir la documentation Storybook"
 ```
 
 ## 2. Stratégie de Conteneurisation (Multi-stage Builds)
@@ -97,7 +99,6 @@ Le fichier `nginx.conf.template` est injecté au démarrage du conteneur. Il gè
 location ^~ /api/ {
     proxy_pass ${API_URL};
     proxy_set_header X-Real-IP $remote_addr;
-    # ... configuration SSL et Timeouts
 }
 ```
 
@@ -117,7 +118,7 @@ Déclenché sur les pushs vers `main` :
     - Tests de composants (Storybook).
 3.  **Documentation** : Build et déploiement de Storybook sur **GitHub Pages**.
 
-### Workflow de Déploiement (`deploy.yml`)
+### Workflow de Déploiement
 
 Une fois les tests validés :
 
@@ -128,7 +129,7 @@ Une fois les tests validés :
 
 ### Plateforme de Déploiement : Render
 
-L'application est hébergée sur **Render**, une plateforme Cloud PaaS (Platform as a Service).
+L'application est hébergée sur **Render**
 
 - **Environnements** : Bien que l'infrastructure Render soit configurée pour supporter deux environnements distincts (**Staging** et **Production**), seul l'environnement de **Production** est actuellement déployé automatiquement via le pipeline CI/CD pour cet exercice.
 - **Services** :
