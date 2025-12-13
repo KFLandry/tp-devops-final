@@ -52,8 +52,8 @@ graph TD
 
     %% Flux Application
     User -->|HTTPS| Nginx
-    Nginx -->|/ (Static)| React
-    Nginx -->|/api/* (Proxy)| GoApp
+    Nginx -->|"/ (Static)"| React
+    Nginx -->|"/api/* (Proxy)"| GoApp
     GoApp -->|SQL| DB
 ```
 
